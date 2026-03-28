@@ -6,6 +6,7 @@ from genedesign.models.transcript import Transcript
 from genedesign.checkers.forbidden_sequence_checker import ForbiddenSequenceChecker
 from genedesign.checkers.internal_promoter_checker import PromoterChecker
 from genedesign.checkers.codon_checker import CodonChecker
+from genedesign.checkers.internal_rbs_checker import InternalRBSChecker
 
 
 class TranscriptDesigner:
@@ -20,6 +21,7 @@ class TranscriptDesigner:
         self.forbiddenChecker = None
         self.promoterChecker = None
         self.codonChecker = None
+        self.rbsChecker = None
 
     def initiate(self) -> None:
         """
@@ -36,6 +38,9 @@ class TranscriptDesigner:
 
         self.codonChecker = CodonChecker()
         self.codonChecker.initiate()
+
+        self.rbsChecker = InternalRBSChecker()
+        self.rbsChecker.initiate()
 
         # Parse codon usage file
         usage_file = os.path.join(os.path.dirname(__file__), "data", "codon_usage.txt")
@@ -118,7 +123,12 @@ class TranscriptDesigner:
                 if not passed_promoter:
                     continue
 
-                # Check 3: codon usage quality on the local window
+                # Check 3: internal RBS
+                passed_rbs, _ = self.rbsChecker.run(window_dna)
+                if not passed_rbs:
+                    continue
+
+                # Check 4: codon usage quality on the local window
                 codon_window = codons + candidate
                 _, diversity, _, cai = self.codonChecker.run(codon_window)
 
